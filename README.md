@@ -2,7 +2,7 @@
 
 This is a set of open-source audio plugins in LV2 format, based on other existing open-source plugins.
 
-They have been tailored for use within Darkglass.
+They have been tailored for use within Darkglass.  
 Check the header on each `plugin.cpp` file for a list of changes for each plugin.
 
 The LV2 URIs have been changed as the plugins are no longer compatible with the original versions.
@@ -22,3 +22,6 @@ The only required dependency is `lv2`, its headers must be installed/available o
 
 There is no global license file on this repository, as each adapted plugin has its own license.  
 We follow the intentions of the original authors and keep the license from the original source code.
+
+For plugins, check the header on the C++ file or the `doap:license` in the LV2 ttl for licensing information.  
+For non-plugin code check the `LICENSE.txt` in each folder.
