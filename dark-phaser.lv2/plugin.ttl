@@ -9,23 +9,25 @@
 @prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix units: <http://lv2plug.in/ns/extensions/units#> .
 
-<urn:darkglass:calf-phaser#audiogroup>
+<urn:darkglass:dark-phaser#audiogroup>
 	a pg:StereoGroup, pg:Group ;
 	lv2:symbol "audio" ;
 	lv2:name "Audio" .
 
-<urn:darkglass:calf-phaser>
+<urn:darkglass:dark-phaser>
 	a lv2:Plugin , lv2:ModulatorPlugin ;
 	dg:abbreviation "PHA" ;
 	doap:name "Phaser" ;
 	doap:developer [
-		foaf:name "TODO" ;
+		foaf:name "Krzysztof Foltman" ;
+		foaf:homepage <http://calf-studio-gear.org/> ;
 	] ;
 	doap:maintainer [
 		foaf:name "Darkglass" ;
 		foaf:homepage <https://www.darkglass.com/> ;
 		foaf:mbox <mailto:contact@darkglass.com> ;
 	] ;
+	doap:license <http://spdx.org/licenses/LGPL-2.0-or-later.html> ;
 	lv2:optionalFeature lv2:hardRTCapable ;
 	lv2:port [
 		a lv2:AudioPort, lv2:InputPort ;
@@ -33,28 +35,28 @@
 		lv2:symbol "input1" ;
 		lv2:name "Input 1" ;
 		lv2:designation pg:left ;
-		pg:group <urn:darkglass:calf-phaser#audiogroup>
+		pg:group <urn:darkglass:dark-phaser#audiogroup>
 	] , [
 		a lv2:AudioPort, lv2:InputPort ;
 		lv2:index 1 ;
 		lv2:symbol "input2" ;
 		lv2:name "Input 2" ;
 		lv2:designation pg:right ;
-		pg:group <urn:darkglass:calf-phaser#audiogroup>
+		pg:group <urn:darkglass:dark-phaser#audiogroup>
 	] , [
 		a lv2:AudioPort, lv2:OutputPort ;
 		lv2:index 2 ;
 		lv2:symbol "output1" ;
 		lv2:name "Output 1" ;
 		lv2:designation pg:left ;
-		pg:group <urn:darkglass:calf-phaser#audiogroup>
+		pg:group <urn:darkglass:dark-phaser#audiogroup>
 	] , [
 		a lv2:AudioPort, lv2:OutputPort ;
 		lv2:index 3 ;
 		lv2:symbol "output2" ;
 		lv2:name "Output2" ;
 		lv2:designation pg:right ;
-		pg:group <urn:darkglass:calf-phaser#audiogroup>
+		pg:group <urn:darkglass:dark-phaser#audiogroup>
 	], [
 		a lv2:InputPort, lv2:ControlPort ;
 		lv2:index 4 ;
