@@ -7,18 +7,17 @@
 # ---------------------------------------------------------------------------------------------------------------------
 # Read target compiler from environment
 
-CC ?= gcc
 CXX ?= g++
 
 # ---------------------------------------------------------------------------------------------------------------------
 # Auto-detect target compiler if not defined
 
 ifneq ($(shell echo -e escaped-by-default | grep -- '-e escaped-by-default'),-e escaped-by-default)
-TARGET_COMPILER = $(shell echo -e '#ifdef __clang__\nclang\n#else\ngcc\n#endif' | $(CC) -E -P -x c - 2>/dev/null)
+TARGET_COMPILER = $(shell echo -e '#ifdef __clang__\nclang\n#else\ngcc\n#endif' | $(CXX) -E -P -x c - 2>/dev/null)
 else ifeq ($(shell echo '\#escaped-by-default' | grep -- '\#escaped-by-default'),\#escaped-by-default)
-TARGET_COMPILER = $(shell echo '\#ifdef __clang__\nclang\n\#else\ngcc\n\#endif' | $(CC) -E -P -x c - 2>/dev/null)
+TARGET_COMPILER = $(shell echo '\#ifdef __clang__\nclang\n\#else\ngcc\n\#endif' | $(CXX) -E -P -x c - 2>/dev/null)
 else
-TARGET_COMPILER = $(shell echo '#ifdef __clang__\nclang\n#else\ngcc\n#endif' | $(CC) -E -P -x c - 2>/dev/null)
+TARGET_COMPILER = $(shell echo '#ifdef __clang__\nclang\n#else\ngcc\n#endif' | $(CXX) -E -P -x c - 2>/dev/null)
 endif
 
 ifneq ($(CLANG),true)
@@ -36,7 +35,7 @@ endif
 # ---------------------------------------------------------------------------------------------------------------------
 # Auto-detect target OS if not defined
 
-TARGET_MACHINE := $(shell $(CC) -dumpmachine)
+TARGET_MACHINE := $(shell $(CXX) -dumpmachine)
 
 ifneq ($(BSD),true)
 ifneq ($(HAIKU),true)
