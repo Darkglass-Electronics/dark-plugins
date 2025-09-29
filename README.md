@@ -18,10 +18,12 @@ There is no separate build folder.
 
 The only required dependency is `lv2`, its headers must be installed/available on the default compiler paths.
 
+There is no `make install` step, just copy the LV2 bundles manually.
+
 ## License
 
 There is no global license file on this repository, as each adapted plugin has its own license.  
 We follow the intentions of the original authors and keep the license from the original source code.
 
 For plugins, check the header on the C++ file or the `doap:license` in the LV2 ttl for licensing information.  
-For non-plugin code check the `LICENSE.txt` in each folder.
+For non-plugin code check the `LICENSE.txt` file in each folder.
