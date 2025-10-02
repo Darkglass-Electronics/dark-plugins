@@ -85,7 +85,7 @@ FLAGS += -fno-gnu-unique
 endif
 
 CFLAGS += $(FLAGS) -std=gnu11
-CXXFLAGS += $(FLAGS) -std=gnu++11
+CXXFLAGS += $(FLAGS) -std=gnu++17
 CXXFLAGS += -fvisibility-inlines-hidden
 
 LDFLAGS += -flto -Werror=odr

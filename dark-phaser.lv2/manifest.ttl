@@ -5,3 +5,8 @@
     a lv2:Plugin ;
     lv2:binary <plugin.so> ;
     rdfs:seeAlso <plugin.ttl>  .
+
+<urn:darkglass:dark-phaser#stereo>
+    a lv2:Plugin ;
+    lv2:binary <plugin.so> ;
+    rdfs:seeAlso <plugin.ttl>  .

@@ -5,7 +5,8 @@
  * license but under a new commercial license which is not considered open-source.
  *
  * Modifications were made so that it no longer depends on DPF for building, instead we do raw LV2 support directly.
- * Also the code was manually cleaned up and simplified, heavily reducing its size.
+ * The code also was manually cleaned up and simplified, heavily reducing its size.
+ * Finally a few more tweaks for mono + stereo variants and hide some parameters.
  */
 
 /*******************************************************************************************************************
@@ -34,6 +35,8 @@ OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "genlib_ops.h"
 
 #include <lv2/core/lv2.h>
+
+#include <cstring>
 
 // The State struct contains all the state and procedures for the gendsp kernel
 struct State {
@@ -67,7 +70,41 @@ struct State {
 		__m_phasor_10.reset(0);
 	};
 	// the signal processing routine;
-	inline void perform(const t_sample ** __ins, t_sample ** __outs, int __n) {
+	inline void perform_mono(const t_sample * __in1, t_sample * __out1, int __n) {
+		t_sample expr_1090 = (((m_tone_8 * ((int)2)) * ((t_sample)3.1415926535898)) * ((t_sample)2.0833333333333e-05));
+		t_sample expr_1089 = (((t_sample)0.0027777777777778) * m_phase_7);
+		t_sample wrap_3 = wrap(expr_1089, ((int)0), ((int)1));
+		t_sample sin_24 = sin(expr_1090);
+		t_sample clamp_25 = ((sin_24 <= ((t_sample)1e-05)) ? ((t_sample)1e-05) : ((sin_24 >= ((t_sample)0.99999)) ? ((t_sample)0.99999) : sin_24));
+		t_sample mul_15 = (m_depth_6 * ((t_sample)0.01));
+		t_sample mul_859 = (m_depth_6 * ((t_sample)0.005));
+		t_sample add_667 = (mul_859 + ((int)1));
+		// the main sample loop;
+		while ((__n--)) {
+			const t_sample in1 = (*(__in1++));
+			t_sample mix_1 = (m_shape_5 + (((t_sample)0.999) * (m_smth_4 - m_shape_5)));
+			t_sample mix_2 = (wrap_3 + (((t_sample)0.999) * (m_smth_3 - wrap_3)));
+			t_sample mix_wet = (wet + (((t_sample)0.999) * (m_smth_wet - wet)));
+			t_sample mix_1062 = (m_y_2 + (clamp_25 * (in1 - m_y_2)));
+			t_sample sub_932 = (in1 - mix_1062);
+			t_sample phasor_6 = __m_phasor_10(m_rate_9, samples_to_seconds);
+			t_sample triangle_7 = triangle(phasor_6, mix_1);
+			t_sample mul_958 = (mix_1062 * triangle_7);
+			t_sample rsub_17 = (((int)1) - triangle_7);
+			t_sample mul_971 = (sub_932 * rsub_17);
+			t_sample add_984 = (mul_958 + mul_971);
+			t_sample mix_1129 = (in1 + (mul_15 * (add_984 - in1)));
+			t_sample out1 = (mix_1129 * add_667);
+			m_smth_4 = mix_1;
+			m_smth_3 = mix_2;
+			m_smth_wet = mix_wet;
+			m_y_2 = mix_1062;
+			// assign results to output buffer;
+			t_sample dry = 1.f - mix_wet;
+			(*(__out1++)) = out1 * mix_wet + in1 * dry;
+		}
+	};
+	inline void perform_stereo(const t_sample ** __ins, t_sample ** __outs, int __n) {
 		const t_sample * __in1 = __ins[0];
 		const t_sample * __in2 = __ins[1];
 		t_sample * __out1 = __outs[0];
@@ -137,10 +174,10 @@ struct State {
 		struct {
 			const float* in[2];
 			float* out[2];
-			const float* ctrls[7];
+			const float* ctrls[5];
 		} ports;
 		void* ptrs[11];
-	} lv2;
+	} lv2 = {};
 	inline void lv2_reset() {
 		m_y_1 = ((int)0);
 		m_y_2 = ((int)0);
@@ -148,51 +185,62 @@ struct State {
 		m_smth_4 = ((int)0);
 		m_smth_wet = ((int)0);
 	}
-	inline void lv2_run(uint32_t nsamples) {
+	inline void lv2_prerun() {
 		wet = *lv2.ports.ctrls[0] > 0.5f ? 1.f : 0.f;
 		if (*lv2.ports.ctrls[1] > 0.5f)
 			lv2_reset();
 		set_rate(*lv2.ports.ctrls[2]);
 		set_shape(*lv2.ports.ctrls[3]);
-		set_tone(*lv2.ports.ctrls[4]);
-		set_phase(*lv2.ports.ctrls[5]);
-		set_depth(*lv2.ports.ctrls[6]);
-		perform(lv2.ports.in, lv2.ports.out, nsamples);
+		set_depth(*lv2.ports.ctrls[4]);
+	}
+	inline void lv2_run_mono(uint32_t nsamples) {
+		lv2_prerun();
+		perform_mono(lv2.ports.in[0], lv2.ports.out[0], nsamples);
+	}
+	inline void lv2_run_stereo(uint32_t nsamples) {
+		lv2_prerun();
+		perform_stereo(lv2.ports.in, lv2.ports.out, nsamples);
 	}
 };
 
 // --------------------------------------------------------------------------------------------------------------------
 
-static LV2_Handle lv2_instantiate(const LV2_Descriptor*, double sampleRate, const char*, const LV2_Feature* const*)
-{
-    auto plugin = new State();
-    plugin->reset(sampleRate);
-    return plugin;
+static LV2_Handle lv2_instantiate(const LV2_Descriptor* desc, double sampleRate, const char*, const LV2_Feature* const*) {
+	auto plugin = new State();
+	plugin->reset(sampleRate);
+	if (std::strcmp(desc->URI, "urn:darkglass:dark-tremolo#stereo") == 0)
+		plugin->m_phase_7 = 180;
+	return plugin;
 }
 
-static void lv2_cleanup(LV2_Handle instance)
-{
-    delete static_cast<State*>(instance);
+static void lv2_cleanup(LV2_Handle instance) {
+	delete static_cast<State*>(instance);
 }
 
-static void lv2_connect_port(LV2_Handle instance, uint32_t port, void *data)
-{
-    static_cast<State*>(instance)->lv2.ptrs[port] = data;
+static void lv2_connect_port_mono(LV2_Handle instance, uint32_t port, void *data) {
+	uint32_t offset;
+	switch (port) {
+		case 0: offset = 0; break;
+		case 1: offset = 1; break;
+		default: offset = 2; break;
+	}
+	static_cast<State*>(instance)->lv2.ptrs[port + offset] = data;
 }
 
-static void lv2_activate(LV2_Handle instance)
-{
-    static_cast<State*>(instance)->lv2_reset();
+static void lv2_connect_port_stereo(LV2_Handle instance, uint32_t port, void *data) {
+	static_cast<State*>(instance)->lv2.ptrs[port] = data;
 }
 
-static void lv2_run(LV2_Handle instance, uint32_t nsamples)
-{
-    static_cast<State*>(instance)->lv2_run(nsamples);
+static void lv2_activate(LV2_Handle instance) {
+	static_cast<State*>(instance)->lv2_reset();
 }
 
-static const void* lv2_extension_data(const char*)
-{
-    return nullptr;
+static void lv2_run_mono(LV2_Handle instance, uint32_t nsamples) {
+	static_cast<State*>(instance)->lv2_run_mono(nsamples);
+}
+
+static void lv2_run_stereo(LV2_Handle instance, uint32_t nsamples) {
+	static_cast<State*>(instance)->lv2_run_stereo(nsamples);
 }
 
 // --------------------------------------------------------------------------------------------------------------------
@@ -200,17 +248,33 @@ static const void* lv2_extension_data(const char*)
 LV2_SYMBOL_EXPORT
 const LV2_Descriptor* lv2_descriptor(uint32_t index)
 {
-    static const LV2_Descriptor descriptor = {
-        .URI = "urn:darkglass:dark-tremolo",
-        .instantiate = lv2_instantiate,
-        .connect_port = lv2_connect_port,
-        .activate = lv2_activate,
-        .run = lv2_run,
-        .deactivate = nullptr,
-        .cleanup = lv2_cleanup,
-        .extension_data = lv2_extension_data
-    };
+	static constexpr const LV2_Descriptor descriptorMono = {
+		.URI = "urn:darkglass:dark-tremolo",
+		.instantiate = lv2_instantiate,
+		.connect_port = lv2_connect_port_mono,
+		.activate = lv2_activate,
+		.run = lv2_run_mono,
+		.deactivate = nullptr,
+		.cleanup = lv2_cleanup,
+		.extension_data = nullptr
+	};
+	static constexpr const LV2_Descriptor descriptorStereo = {
+		.URI = "urn:darkglass:dark-tremolo#stereo",
+		.instantiate = lv2_instantiate,
+		.connect_port = lv2_connect_port_stereo,
+		.activate = lv2_activate,
+		.run = lv2_run_stereo,
+		.deactivate = nullptr,
+		.cleanup = lv2_cleanup,
+		.extension_data = nullptr
+	};
 
-    return index == 0 ? &descriptor : nullptr;
+	switch (index) {
+	case 0:
+		return &descriptorMono;
+	case 1:
+		return &descriptorStereo;
+	default:
+		return nullptr;
+	}
 }
- 

@@ -32,82 +32,132 @@
 
 #include <lv2/core/lv2.h>
 
+#include <cstring>
+
 /**********************************************************************
  * PHASER by Krzysztof Foltman
 **********************************************************************/
 
 namespace calf_plugins {
 
+struct unused
+{
+};
+
+template <int io_count>
 struct phaser_metadata
 {
     enum { param_on, par_reset, par_freq, par_depth, par_rate, par_fb, par_stages, par_stereo, param_count };
-    enum { in_count = 2, out_count = 2 };
+    enum { in_count = io_count, out_count = io_count };
 };
 
-class phaser_audio_module: public audio_module<phaser_metadata>
+template <int io_count>
+class phaser_audio_module: public audio_module<phaser_metadata<io_count>>
 {
+    static constexpr int param_on = phaser_metadata<io_count>::param_on;
+    static constexpr int par_reset = phaser_metadata<io_count>::par_reset;
+    static constexpr int par_freq = phaser_metadata<io_count>::par_freq;
+    static constexpr int par_depth = phaser_metadata<io_count>::par_depth;
+    static constexpr int par_rate = phaser_metadata<io_count>::par_rate;
+    static constexpr int par_fb = phaser_metadata<io_count>::par_fb;
+    static constexpr int par_stages = phaser_metadata<io_count>::par_stages;
+
 public:
     enum { MaxStages = 12 };
-    float last_r_phase;
-    dsp::simple_phaser left, right;
-    float x1vals[2][MaxStages], y1vals[2][MaxStages];
+    dsp::simple_phaser left;
+    float x1vals[io_count][MaxStages];
+    float y1vals[io_count][MaxStages];
     dsp::bypass bypass;
     bool reset;
 
+    std::conditional_t<io_count == 2, dsp::simple_phaser, unused> right;
+
 public:
-    phaser_audio_module()
-    : left(MaxStages, x1vals[0], y1vals[0])
-    , right(MaxStages, x1vals[1], y1vals[1])
-    {
-        left.set_dry(1.f); right.set_dry(1.f);
-        left.set_wet(1.f); right.set_wet(1.f);
-        left.set_lfo_active(false); right.set_lfo_active(false);
-    }
+    phaser_audio_module();
 
     void params_changed() override {
+        const auto &params = this->params;
+
         float rate = *params[par_rate]; // 0.01*pow(1000.0f,*params[par_rate]);
         float base_frq = *params[par_freq];
         float mod_depth = *params[par_depth];
         float fb = *params[par_fb];
         int stages = (int)*params[par_stages];
-        left.set_rate(rate); right.set_rate(rate);
-        left.set_base_frq(base_frq); right.set_base_frq(base_frq);
-        left.set_mod_depth(mod_depth); right.set_mod_depth(mod_depth);
-        left.set_fb(fb); right.set_fb(fb);
-        left.set_stages(stages); right.set_stages(stages);
-        float r_phase = *params[par_stereo] * (1.f / 360.f);
+
+        left.set_rate(rate);
+        left.set_base_frq(base_frq);
+        left.set_mod_depth(mod_depth);
+        left.set_fb(fb);
+        left.set_stages(stages);
+
+        if constexpr (io_count == 2) {
+            right.set_rate(rate);
+            right.set_base_frq(base_frq);
+            right.set_mod_depth(mod_depth);
+            right.set_fb(fb);
+            right.set_stages(stages);
+        }
+
         if (reset || *params[par_reset] >= 0.5f) {
             left.reset_phase(0.f);
-            right.reset_phase(r_phase);
-            last_r_phase = r_phase;
             reset = false;
-        } else {
-            if (fabs(r_phase - last_r_phase) > 0.0001f) {
-                right.phase = left.phase;
-                right.inc_phase(r_phase);
-                last_r_phase = r_phase;
-            }
+            if constexpr (io_count == 2)
+                right.reset_phase(0.5f);
         }
     }
 
     void activate() override {
         left.reset();
-        right.reset();
         left.reset_phase(0.f);
-        right.reset_phase(0.f);
         reset = true;
+
+        if constexpr (io_count == 2) {
+            right.reset();
+            right.reset_phase(0.5f);
+        }
     }
 
     void set_sample_rate(uint32_t sr) override {
         left.setup(sr);
-        right.setup(sr);
+
+        if constexpr (io_count == 2)
+            right.setup(sr);
     }
 
     void process(uint32_t offset, uint32_t nsamples) override {
+        const auto &outs = this->outs;
+        const auto &ins = this->ins;
+        const auto &params = this->params;
+
         left.process(outs[0] + offset, ins[0] + offset, nsamples, *params[param_on] > 0.5);
-        right.process(outs[1] + offset, ins[1] + offset, nsamples, *params[param_on] > 0.5);
+
+        if constexpr (io_count == 2)
+            right.process(outs[1] + offset, ins[1] + offset, nsamples, *params[param_on] > 0.5);
     }
 };
+
+template <>
+phaser_audio_module<1>::phaser_audio_module()
+    : left(MaxStages, x1vals[0], y1vals[0])
+{
+    left.set_dry(1.f);
+    left.set_wet(1.f);
+    left.set_lfo_active(false);
+}
+
+template <>
+phaser_audio_module<2>::phaser_audio_module()
+    : left(MaxStages, x1vals[0], y1vals[0])
+    , right(MaxStages, x1vals[1], y1vals[1])
+{
+    left.set_dry(1.f);
+    left.set_wet(1.f);
+    left.set_lfo_active(false);
+
+    right.set_dry(1.f);
+    right.set_wet(1.f);
+    right.set_lfo_active(false);
+}
 
 }
 
@@ -115,60 +165,54 @@ public:
 
 using namespace calf_plugins;
 
-static LV2_Handle lv2_instantiate(const LV2_Descriptor*, double sampleRate, const char*, const LV2_Feature* const*)
+template <int io_count>
+static LV2_Handle lv2_instantiate(const LV2_Descriptor*, double sampleRate, const char* uri, const LV2_Feature* const*)
 {
-    auto plugin = new phaser_audio_module();
+    auto plugin = new phaser_audio_module<io_count>();
     plugin->set_sample_rate(sampleRate);
     return plugin;
 }
 
+template <int io_count>
 static void lv2_cleanup(LV2_Handle instance)
 {
-    delete static_cast<phaser_audio_module*>(instance);
+    delete static_cast<phaser_audio_module<io_count>*>(instance);
 }
 
+template <int io_count>
 static void lv2_connect_port(LV2_Handle instance, uint32_t port, void *data)
 {
-    auto plugin = static_cast<phaser_audio_module*>(instance);
+    auto plugin = static_cast<phaser_audio_module<io_count>*>(instance);
 
-    if (port <= phaser_metadata::in_count)
-    {
+    if (port <= io_count) {
         plugin->ins[port] = static_cast<float*>(data);
         return;
     }
-    port -= phaser_metadata::in_count;
+    port -= io_count;
 
-    if (port <= phaser_metadata::out_count)
-    {
+    if (port <= io_count) {
         plugin->outs[port] = static_cast<float*>(data);
         return;
     }
-    port -= phaser_metadata::out_count;
+    port -= io_count;
 
-    if (port <= phaser_metadata::param_count)
-    {
+    if (port <= phaser_metadata<io_count>::param_count)
         plugin->params[port] = static_cast<float*>(data);
-        return;
-    }
-    port -= phaser_metadata::param_count;
 }
 
+template <int io_count>
 static void lv2_activate(LV2_Handle instance)
 {
-    auto plugin = static_cast<phaser_audio_module*>(instance);
+    auto plugin = static_cast<phaser_audio_module<io_count>*>(instance);
     plugin->activate();
 }
 
+template <int io_count>
 static void lv2_run(LV2_Handle instance, uint32_t nsamples)
 {
-    auto plugin = static_cast<phaser_audio_module*>(instance);
+    auto plugin = static_cast<phaser_audio_module<io_count>*>(instance);
     plugin->params_changed();
     plugin->process(0, nsamples);
-}
-
-static const void* lv2_extension_data(const char*)
-{
-    return nullptr;
 }
 
 // --------------------------------------------------------------------------------------------------------------------
@@ -176,17 +220,33 @@ static const void* lv2_extension_data(const char*)
 LV2_SYMBOL_EXPORT
 const LV2_Descriptor* lv2_descriptor(uint32_t index)
 {
-    static const LV2_Descriptor descriptor = {
+    static constexpr const LV2_Descriptor descriptorMono = {
         .URI = "urn:darkglass:dark-phaser",
-        .instantiate = lv2_instantiate,
-        .connect_port = lv2_connect_port,
-        .activate = lv2_activate,
-        .run = lv2_run,
+        .instantiate = lv2_instantiate<1>,
+        .connect_port = lv2_connect_port<1>,
+        .activate = lv2_activate<1>,
+        .run = lv2_run<1>,
         .deactivate = nullptr,
-        .cleanup = lv2_cleanup,
-        .extension_data = lv2_extension_data
+        .cleanup = lv2_cleanup<1>,
+        .extension_data = nullptr
+    };
+    static constexpr const LV2_Descriptor descriptorStereo = {
+        .URI = "urn:darkglass:dark-phaser#stereo",
+        .instantiate = lv2_instantiate<2>,
+        .connect_port = lv2_connect_port<2>,
+        .activate = lv2_activate<2>,
+        .run = lv2_run<2>,
+        .deactivate = nullptr,
+        .cleanup = lv2_cleanup<2>,
+        .extension_data = nullptr
     };
 
-    return index == 0 ? &descriptor : nullptr;
+    switch (index) {
+    case 0:
+        return &descriptorMono;
+    case 1:
+        return &descriptorStereo;
+    default:
+        return nullptr;
+    }
 }
- 
