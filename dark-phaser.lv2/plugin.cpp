@@ -129,10 +129,15 @@ public:
         const auto &ins = this->ins;
         const auto &params = this->params;
 
-        left.process(outs[0] + offset, ins[0] + offset, nsamples, *params[param_on] > 0.5);
+        bypass.update(*params[param_on] < 0.5f, nsamples);
+
+        left.process(outs[0] + offset, ins[0] + offset, nsamples, true);
 
         if constexpr (io_count == 2)
-            right.process(outs[1] + offset, ins[1] + offset, nsamples, *params[param_on] > 0.5);
+            right.process(outs[1] + offset, ins[1] + offset, nsamples, true);
+
+        bypass.crossfade(ins, outs, io_count, offset, nsamples);
+
     }
 };
 

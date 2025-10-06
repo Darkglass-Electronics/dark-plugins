@@ -197,7 +197,7 @@
 		lv2:symbol "Color" ;
 		lv2:name "Color" ;
 		lv2:portProperty lv2:integer , lv2:enumeration , pp:hasStrictBounds ;
-		lv2:default 1000 ;
+		lv2:default 750 ;
 		lv2:minimum 20 ;
 		lv2:maximum 20000 ;
 		lv2:scalePoint [rdfs:label "250 Hz"; rdf:value 250];

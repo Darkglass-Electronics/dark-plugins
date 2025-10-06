@@ -28,14 +28,15 @@ public:
     }
     
     /// Apply ramp to prevent clicking
-    void crossfade(float *inputs[], float *outputs[], uint32_t nbuffers, uint32_t offset, uint32_t nsamples)
+    void crossfade(const float *const *inputs, float *const *outputs, uint32_t nbuffers, uint32_t offset, uint32_t nsamples)
     {
         if (!nsamples || (first_value + next_value) == 0)
             return;
         float step = (next_value - first_value) / nsamples;
         for (uint32_t b = 0; b < nbuffers; ++b)
         {
-            float *out = outputs[b] + offset, *in = inputs[b] + offset;
+            float *out = outputs[b] + offset;
+            const float *in = inputs[b] + offset;
             if (first_value >= 1 && next_value >= 1)
                 memcpy(out, in, nsamples * sizeof(float));
             else
