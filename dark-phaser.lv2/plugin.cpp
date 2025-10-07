@@ -67,8 +67,9 @@ public:
     dsp::simple_phaser left;
     float x1vals[io_count][MaxStages];
     float y1vals[io_count][MaxStages];
-    dsp::bypass bypass;
+    dsp::bypass bypass{480}; // 10ms at 48kHz
     bool reset;
+    dsp::inertia<dsp::linear_ramp> fb_ramp{dsp::linear_ramp(480)}; // 10ms at 48kHz
 
     std::conditional_t<io_count == 2, dsp::simple_phaser, unused> right;
 
@@ -84,25 +85,29 @@ public:
         float fb = *params[par_fb];
         int stages = (int)*params[par_stages];
 
+        fb_ramp.set_inertia(fb);
+
         left.set_rate(rate);
         left.set_base_frq(base_frq);
         left.set_mod_depth(mod_depth);
-        left.set_fb(fb);
         left.set_stages(stages);
 
         if constexpr (io_count == 2) {
             right.set_rate(rate);
             right.set_base_frq(base_frq);
             right.set_mod_depth(mod_depth);
-            right.set_fb(fb);
             right.set_stages(stages);
         }
 
         if (reset || *params[par_reset] >= 0.5f) {
+            fb_ramp.set_now(fb);
+            left.reset();
             left.reset_phase(0.f);
             reset = false;
-            if constexpr (io_count == 2)
+            if constexpr (io_count == 2) {
+                right.reset();
                 right.reset_phase(0.5f);
+            }
         }
     }
 
@@ -122,6 +127,8 @@ public:
 
         if constexpr (io_count == 2)
             right.setup(sr);
+        
+        fb_ramp.ramp.set_length(sr * 0.01); // 10ms
     }
 
     void process(uint32_t offset, uint32_t nsamples) override {
@@ -131,10 +138,17 @@ public:
 
         bypass.update(*params[param_on] < 0.5f, nsamples);
 
-        left.process(outs[0] + offset, ins[0] + offset, nsamples, true);
+        for (uint32_t i = 0; i < nsamples; ++i) {
+            float current_fb = fb_ramp.get();
 
-        if constexpr (io_count == 2)
-            right.process(outs[1] + offset, ins[1] + offset, nsamples, true);
+            left.set_fb(current_fb);
+            left.process(outs[0] + offset + i, ins[0] + offset + i, 1, true);
+
+            if constexpr (io_count == 2) {
+                right.set_fb(current_fb);
+                right.process(outs[1] + offset + i, ins[1] + offset + i, 1, true);
+            }
+        }
 
         bypass.crossfade(ins, outs, io_count, offset, nsamples);
 
