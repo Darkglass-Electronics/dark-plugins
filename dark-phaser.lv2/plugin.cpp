@@ -40,6 +40,8 @@
 
 namespace calf_plugins {
 
+static constexpr int kPhaserModuleDefaultStages = 6;
+
 struct unused
 {
 };
@@ -70,6 +72,7 @@ public:
     dsp::bypass bypass{480}; // 10ms at 48kHz
     bool reset;
     dsp::inertia<dsp::linear_ramp> fb_ramp{dsp::linear_ramp(480)}; // 10ms at 48kHz
+    dsp::switcher<int> stage_switcher{2400}; // 50ms at 48kHz (25ms fade out + 25ms fade in)
 
     std::conditional_t<io_count == 2, dsp::simple_phaser, unused> right;
 
@@ -86,21 +89,22 @@ public:
         int stages = (int)*params[par_stages];
 
         fb_ramp.set_inertia(fb);
+        if (stages != stage_switcher.get_state())
+            stage_switcher.set(stages);
 
         left.set_rate(rate);
         left.set_base_frq(base_frq);
         left.set_mod_depth(mod_depth);
-        left.set_stages(stages);
 
         if constexpr (io_count == 2) {
             right.set_rate(rate);
             right.set_base_frq(base_frq);
             right.set_mod_depth(mod_depth);
-            right.set_stages(stages);
         }
 
         if (reset || *params[par_reset] >= 0.5f) {
             fb_ramp.set_now(fb);
+            stage_switcher.reset();
             left.reset();
             left.reset_phase(0.f);
             reset = false;
@@ -128,7 +132,7 @@ public:
         if constexpr (io_count == 2)
             right.setup(sr);
         
-        fb_ramp.ramp.set_length(sr * 0.01); // 10ms
+        fb_ramp.ramp.set_length(static_cast<int>(static_cast<float>(sr) * 0.01)); // 10ms
     }
 
     void process(uint32_t offset, uint32_t nsamples) override {
@@ -140,13 +144,18 @@ public:
 
         for (uint32_t i = 0; i < nsamples; ++i) {
             float current_fb = fb_ramp.get();
+            float stage_switcher_amp = stage_switcher.get_ramp();
 
             left.set_fb(current_fb);
+            left.set_stages(stage_switcher.get_state());
             left.process(outs[0] + offset + i, ins[0] + offset + i, 1, true);
+            outs[0][offset + i] *= stage_switcher_amp;
 
             if constexpr (io_count == 2) {
                 right.set_fb(current_fb);
+                right.set_stages(stage_switcher.get_state());
                 right.process(outs[1] + offset + i, ins[1] + offset + i, 1, true);
+                outs[1][offset + i] *= stage_switcher_amp;
             }
         }
 
@@ -157,17 +166,20 @@ public:
 
 template <>
 phaser_audio_module<1>::phaser_audio_module()
-    : left(MaxStages, x1vals[0], y1vals[0])
+    : left(kPhaserModuleDefaultStages, x1vals[0], y1vals[0])
 {
     left.set_dry(1.f);
     left.set_wet(1.f);
     left.set_lfo_active(false);
+
+    stage_switcher.set(kPhaserModuleDefaultStages);
+    stage_switcher.reset();
 }
 
 template <>
 phaser_audio_module<2>::phaser_audio_module()
-    : left(MaxStages, x1vals[0], y1vals[0])
-    , right(MaxStages, x1vals[1], y1vals[1])
+    : left(kPhaserModuleDefaultStages, x1vals[0], y1vals[0])
+    , right(kPhaserModuleDefaultStages, x1vals[1], y1vals[1])
 {
     left.set_dry(1.f);
     left.set_wet(1.f);
@@ -176,6 +188,9 @@ phaser_audio_module<2>::phaser_audio_module()
     right.set_dry(1.f);
     right.set_wet(1.f);
     right.set_lfo_active(false);
+
+    stage_switcher.set(kPhaserModuleDefaultStages);
+    stage_switcher.reset();
 }
 
 }

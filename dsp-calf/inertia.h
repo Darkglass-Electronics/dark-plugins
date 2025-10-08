@@ -260,20 +260,32 @@ private:
     T cont_val_cur;
     T cont_val_prev;
     bool is_active;
-    double step;
-    double acc;
+    float step;
+    float acc;
 public:
     switcher(unsigned int samples) : cont_val_cur(), cont_val_prev()
     {
-        step = 1.0/samples;
-        acc = 0;
+        step = 1.f/samples;
+        acc = 0.f;
         is_active = false;
+    }
+
+    void reset()
+    {
+        acc = 0.f;
+        is_active = false;
+        cont_val_prev = cont_val_cur;
     }
 
     void set(T ctr)
     {
         cont_val_cur = ctr;
-        is_active = true;
+        if (is_active && acc >= 0.5f) {
+            // target changed during fade in -> fade out again
+            acc = 1.f - acc;
+        } else {
+            is_active = true;
+        }
     }
 
     void set_previous(T ctr)
@@ -286,31 +298,31 @@ public:
         return cont_val_prev;
     }
 
-    double get_ramp()
+    float get_ramp()
     {
         if(is_active) {
-            if(acc < 0.5) {
+            if(acc < 0.5f) {
                 /// Decrease value to zero
                 acc+= step;
-                return 1 - 2*acc;
+                return 1.f - 2.f*acc;
             }
-            else if(acc >= 0.5 && acc <= 1.0) {
+            else if(acc >= 0.5f && acc <= 1.f) {
                 /// Switch and increase value to one
                 cont_val_prev = cont_val_cur;
                 acc+= step;
-                return (acc - 0.5)*2;
+                return (acc - 0.5f)*2.f;
             }
-            else if(acc > 1) {
+            else if(acc > 1.f) {
                 /// Switching finished
-                acc = 0;
+                acc = 0.f;
                 is_active = false;
-                return 1;
+                return 1.f;
             }
             else
-                return 1;
+                return 1.f;
         }
         else
-            return 1;
+            return 1.f;
     }
 };
 
