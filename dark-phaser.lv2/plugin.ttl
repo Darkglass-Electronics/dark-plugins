@@ -29,6 +29,7 @@
 	] ;
 	doap:license <http://spdx.org/licenses/LGPL-2.0-or-later.html> ;
 	lv2:optionalFeature lv2:hardRTCapable ;
+	lv2:requiredFeature lv2:inPlaceBroken ;
 	lv2:port [
 		a lv2:AudioPort, lv2:InputPort ;
 		lv2:index 0 ;
@@ -143,6 +144,7 @@
 	] ;
 	doap:license <http://spdx.org/licenses/LGPL-2.0-or-later.html> ;
 	lv2:optionalFeature lv2:hardRTCapable ;
+	lv2:requiredFeature lv2:inPlaceBroken ;
 	lv2:port [
 		a lv2:AudioPort, lv2:InputPort ;
 		lv2:index 0 ;
