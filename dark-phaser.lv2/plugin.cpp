@@ -85,7 +85,8 @@ public:
         float rate = *params[par_rate]; // 0.01*pow(1000.0f,*params[par_rate]);
         float base_frq = *params[par_freq];
         float mod_depth = *params[par_depth];
-        float fb = *params[par_fb];
+        // map [0..10] to [0.0..0.9]
+        float fb = 0.09f * (*params[par_fb]);
         int stages = (int)*params[par_stages];
 
         fb_ramp.set_inertia(fb);

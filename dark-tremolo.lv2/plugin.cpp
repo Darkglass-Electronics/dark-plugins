@@ -194,7 +194,8 @@ struct State {
 	inline void lv2_prerun() {
 		wet = *lv2.ports.ctrls[0] > 0.5f ? 1.f : 0.f;
 		set_rate(*lv2.ports.ctrls[2]);
-		set_shape(*lv2.ports.ctrls[3]);
+		// map [0..10] to [0.1..0.9]
+		set_shape((*lv2.ports.ctrls[3]) * 0.08f + 0.1f);
 		set_depth(*lv2.ports.ctrls[4]);
 		// reset after parameter setting so that values jump directly to targets
 		if (*lv2.ports.ctrls[1] > 0.5f)
