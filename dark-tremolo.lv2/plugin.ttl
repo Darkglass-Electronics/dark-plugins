@@ -68,7 +68,7 @@
 		lv2:index 4 ;
 		lv2:symbol "rate" ;
 		lv2:name "Rate" ;
-		lv2:default 4.0 ;
+		lv2:default 1.0 ;
 		lv2:minimum 0.1 ;
 		lv2:maximum 20.0 ;
 		lv2:portProperty pp:logarithmic ;
@@ -89,7 +89,7 @@
 		lv2:index 6 ;
 		lv2:name "Depth" ;
 		lv2:symbol "depth" ;
-		lv2:default 100.0 ;
+		lv2:default 80.0 ;
 		lv2:minimum 0.0 ;
 		lv2:maximum 100.0 ;
 		units:unit units:pc ;
