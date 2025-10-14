@@ -177,7 +177,7 @@ struct State {
 		struct {
 			const float* in[2];
 			float* out[2];
-			const float* ctrls[5];
+			const float* ctrls[6];
 		} ports;
 		void* ptrs[11];
 	} lv2 = {};
@@ -197,6 +197,7 @@ struct State {
 		// map [0..10] to [0.1..0.9]
 		set_shape((*lv2.ports.ctrls[3]) * 0.08f + 0.1f);
 		set_depth(*lv2.ports.ctrls[4]);
+		set_phase(*lv2.ports.ctrls[5]);
 		// reset after parameter setting so that values jump directly to targets
 		if (*lv2.ports.ctrls[1] > 0.5f)
 			lv2_reset();

@@ -93,6 +93,17 @@
 		lv2:minimum 0.0 ;
 		lv2:maximum 100.0 ;
 		units:unit units:pc ;
+	] , [
+		a lv2:InputPort , lv2:ControlPort ;
+		lv2:index 7 ;
+		lv2:symbol "stphase" ;
+		lv2:name "Stereo Phase" ;
+		lv2:shortName "St Phase" ;
+		lv2:portProperty pp:hasStrictBounds ;
+		lv2:default 180.0 ;
+		lv2:minimum 0.0 ;
+		lv2:maximum 180.0 ;
+		units:unit units:degree ;
 	] .
 
 <urn:darkglass:dark-tremolo#stereo#audiogroup>
@@ -193,4 +204,15 @@
 		lv2:minimum 0.0 ;
 		lv2:maximum 100.0 ;
 		units:unit units:pc ;
+	] , [
+		a lv2:InputPort , lv2:ControlPort ;
+		lv2:index 9 ;
+		lv2:symbol "stphase" ;
+		lv2:name "Stereo Phase" ;
+		lv2:shortName "St Phase" ;
+		lv2:portProperty pp:hasStrictBounds ;
+		lv2:default 180.0 ;
+		lv2:minimum 0.0 ;
+		lv2:maximum 180.0 ;
+		units:unit units:degree ;
 	] .

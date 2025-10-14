@@ -124,6 +124,17 @@
 		lv2:scalePoint [rdfs:label "4"; rdf:value 4];
 		lv2:scalePoint [rdfs:label "6"; rdf:value 6];
 		lv2:scalePoint [rdfs:label "8"; rdf:value 8];
+	] , [
+		a lv2:InputPort , lv2:ControlPort ;
+		lv2:index 9 ;
+		lv2:symbol "stphase" ;
+		lv2:name "Stereo Phase" ;
+		lv2:shortName "St Phase" ;
+		lv2:portProperty pp:hasStrictBounds ;
+		lv2:default 180.0 ;
+		lv2:minimum 0.0 ;
+		lv2:maximum 180.0 ;
+		units:unit units:degree ;
 	] .
 
 <urn:darkglass:dark-phaser#stereo#audiogroup>
@@ -255,4 +266,15 @@
 		lv2:scalePoint [rdfs:label "4"; rdf:value 4];
 		lv2:scalePoint [rdfs:label "6"; rdf:value 6];
 		lv2:scalePoint [rdfs:label "8"; rdf:value 8];
+	] , [
+		a lv2:InputPort , lv2:ControlPort ;
+		lv2:index 11 ;
+		lv2:symbol "stphase" ;
+		lv2:name "Stereo Phase" ;
+		lv2:shortName "St Phase" ;
+		lv2:portProperty pp:hasStrictBounds ;
+		lv2:default 180.0 ;
+		lv2:minimum 0.0 ;
+		lv2:maximum 180.0 ;
+		units:unit units:degree ;
 	] .

@@ -33,6 +33,7 @@
 #include <lv2/core/lv2.h>
 
 #include <cstring>
+#include <cmath>
 
 /**********************************************************************
  * PHASER by Krzysztof Foltman
@@ -63,6 +64,7 @@ class phaser_audio_module: public audio_module<phaser_metadata<io_count>>
     static constexpr int par_rate = phaser_metadata<io_count>::par_rate;
     static constexpr int par_fb = phaser_metadata<io_count>::par_fb;
     static constexpr int par_stages = phaser_metadata<io_count>::par_stages;
+    static constexpr int par_stereo = phaser_metadata<io_count>::par_stereo;
 
 public:
     enum { MaxStages = 12 };
@@ -71,6 +73,7 @@ public:
     float y1vals[io_count][MaxStages];
     dsp::bypass bypass{480}; // 10ms at 48kHz
     bool reset;
+    float last_r_phase = 0.5f;
     dsp::inertia<dsp::linear_ramp> fb_ramp{dsp::linear_ramp(480)}; // 10ms at 48kHz
     dsp::switcher<int> stage_switcher{2400}; // 50ms at 48kHz (25ms fade out + 25ms fade in)
 
@@ -88,6 +91,7 @@ public:
         // map [0..10] to [0.0..0.9]
         float fb = 0.09f * (*params[par_fb]);
         int stages = (int)*params[par_stages];
+        float r_phase = *params[par_stereo] * (1.f / 360.f);
 
         fb_ramp.set_inertia(fb);
         if (stages != stage_switcher.get_state())
@@ -111,7 +115,17 @@ public:
             reset = false;
             if constexpr (io_count == 2) {
                 right.reset();
-                right.reset_phase(0.5f);
+                right.reset_phase(r_phase);
+            }
+        } else {
+            if constexpr (io_count == 2) {
+                if (std::fabs(r_phase - last_r_phase) > 0.0001f) {
+                    right.phase = left.phase;
+                    right.inc_phase(r_phase);
+                    last_r_phase = r_phase;
+                }
+            } else {
+                last_r_phase = r_phase;
             }
         }
     }
@@ -123,7 +137,7 @@ public:
 
         if constexpr (io_count == 2) {
             right.reset();
-            right.reset_phase(0.5f);
+            right.reset_phase(last_r_phase);
         }
     }
 
