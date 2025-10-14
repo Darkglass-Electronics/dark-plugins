@@ -99,6 +99,7 @@
 		lv2:minimum 0.01 ;
 		lv2:maximum 20.0 ;
 		units:unit units:hz ;
+		lv2:designation dg:quickPot ;
 	] , [
 		a lv2:InputPort , lv2:ControlPort ;
 		lv2:index 7 ;
@@ -241,13 +242,14 @@
 		lv2:minimum 0.01 ;
 		lv2:maximum 20.0 ;
 		units:unit units:hz ;
+		lv2:designation dg:quickPot ;
 	] , [
 		a lv2:InputPort , lv2:ControlPort ;
 		lv2:index 9 ;
 		lv2:symbol "feedback" ;
 		lv2:name "Feedback" ;
 		lv2:portProperty pp:hasStrictBounds ;
-		lv2:default 5.0 ;
+		lv2:default 7.0 ;
 		lv2:minimum 0.0 ;
 		lv2:maximum 10.0 ;
         units:unit dg:oneDecimalPoint ;
