@@ -34,6 +34,7 @@
 
 #include <cstring>
 #include <cmath>
+#include <cstdio>
 
 /**********************************************************************
  * PHASER by Krzysztof Foltman
@@ -76,6 +77,8 @@ public:
     float last_r_phase = 0.5f;
     dsp::inertia<dsp::linear_ramp> fb_ramp{dsp::linear_ramp(480)}; // 10ms at 48kHz
     dsp::switcher<int> stage_switcher{2400}; // 50ms at 48kHz (25ms fade out + 25ms fade in)
+    float fb_compensationgain = 1.f;
+    dsp::inertia<dsp::linear_ramp> fb_compensationgain_ramp{dsp::linear_ramp(480)}; // 10ms at 48kHz
 
     std::conditional_t<io_count == 2, dsp::simple_phaser, unused> right;
 
@@ -90,6 +93,14 @@ public:
         float mod_depth = *params[par_depth];
         // map [0..10] to [0.0..0.9]
         float fb = 0.09f * (*params[par_fb]);
+        if (fb > 0.45f) {
+            // linearly from 0dB@0.45 to -6dB@0.9
+            float fb_compensationgain_old = fb_compensationgain; 
+            fb_compensationgain = std::pow(10.f, (fb - 0.45f) / 0.45f * (-0.3f)); // -0.3f = 20*(-6)
+        } else {
+            fb_compensationgain = 1.f;
+        }
+        fb_compensationgain_ramp.set_inertia(fb_compensationgain);
         int stages = (int)*params[par_stages];
         float r_phase = *params[par_stereo] * (1.f / 360.f);
 
@@ -109,6 +120,7 @@ public:
 
         if (reset || *params[par_reset] >= 0.5f) {
             fb_ramp.set_now(fb);
+            fb_compensationgain_ramp.set_now(fb_compensationgain);
             stage_switcher.reset();
             left.reset();
             left.reset_phase(0.f);
@@ -160,17 +172,18 @@ public:
         for (uint32_t i = 0; i < nsamples; ++i) {
             float current_fb = fb_ramp.get();
             float stage_switcher_amp = stage_switcher.get_ramp();
+            float fb_compensationgain_current = fb_compensationgain_ramp.get();
 
             left.set_fb(current_fb);
             left.set_stages(stage_switcher.get_state());
             left.process(outs[0] + offset + i, ins[0] + offset + i, 1, true);
-            outs[0][offset + i] *= stage_switcher_amp;
+            outs[0][offset + i] *= stage_switcher_amp * fb_compensationgain_current;
 
             if constexpr (io_count == 2) {
                 right.set_fb(current_fb);
                 right.set_stages(stage_switcher.get_state());
                 right.process(outs[1] + offset + i, ins[1] + offset + i, 1, true);
-                outs[1][offset + i] *= stage_switcher_amp;
+                outs[1][offset + i] *= stage_switcher_amp * fb_compensationgain_current;
             }
         }
 
