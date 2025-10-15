@@ -17,7 +17,7 @@
 <urn:darkglass:dark-phaser>
 	a lv2:Plugin , lv2:ModulatorPlugin ;
 	dg:abbreviation "PHA" ;
-	doap:name "Phaser" ;
+	doap:name "Pharos Phaser" ;
 	doap:developer [
 		foaf:name "Krzysztof Foltman" ;
 		foaf:homepage <http://calf-studio-gear.org/> ;
@@ -146,7 +146,7 @@
 <urn:darkglass:dark-phaser#stereo>
 	a lv2:Plugin , lv2:ModulatorPlugin ;
 	dg:abbreviation "PHA" ;
-	doap:name "Phaser Stereo" ;
+	doap:name "Pharos Phaser" ;
 	doap:developer [
 		foaf:name "Krzysztof Foltman" ;
 		foaf:homepage <http://calf-studio-gear.org/> ;

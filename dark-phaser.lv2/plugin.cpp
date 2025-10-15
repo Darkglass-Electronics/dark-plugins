@@ -95,7 +95,6 @@ public:
         float fb = 0.09f * (*params[par_fb]);
         if (fb > 0.45f) {
             // linearly from 0dB@0.45 to -6dB@0.9
-            float fb_compensationgain_old = fb_compensationgain; 
             fb_compensationgain = std::pow(10.f, (fb - 0.45f) / 0.45f * (-0.3f)); // -0.3f = 20*(-6)
         } else {
             fb_compensationgain = 1.f;

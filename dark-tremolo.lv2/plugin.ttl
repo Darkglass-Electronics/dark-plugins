@@ -17,7 +17,7 @@
 <urn:darkglass:dark-tremolo>
 	a lv2:Plugin , lv2:ModulatorPlugin ;
 	dg:abbreviation "TRE" ;
-	doap:name "Tremolo" ;
+	doap:name "Tremora Tremolo" ;
 	doap:developer [
 		foaf:name "SHIRO" ;
 		foaf:homepage <https://github.com/ninodewit/SHIRO-Plugins> ;
@@ -115,7 +115,7 @@
 <urn:darkglass:dark-tremolo#stereo>
 	a lv2:Plugin , lv2:ModulatorPlugin ;
 	dg:abbreviation "TRE" ;
-	doap:name "Tremolo Stereo" ;
+	doap:name "Tremora Tremolo" ;
 	doap:developer [
 		foaf:name "SHIRO" ;
 		foaf:homepage <https://github.com/ninodewit/SHIRO-Plugins> ;
