@@ -180,7 +180,7 @@
 		lv2:index 6 ;
 		lv2:symbol "rate" ;
 		lv2:name "Rate" ;
-		lv2:default 4.0 ;
+		lv2:default 5.5 ;
 		lv2:minimum 0.1 ;
 		lv2:maximum 20.0 ;
 		lv2:portProperty pp:logarithmic ;
