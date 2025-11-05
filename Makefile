@@ -87,6 +87,7 @@ endif
 CFLAGS += $(FLAGS) -std=gnu11
 CXXFLAGS += $(FLAGS) -std=gnu++17
 CXXFLAGS += -fvisibility-inlines-hidden
+CXXFLAGS += -Idarkglass-lv2-extensions/dg-control-port-state-update.lv2
 
 LDFLAGS += -flto -Werror=odr
 ifeq ($(MACOS),true)

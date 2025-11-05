@@ -35,6 +35,9 @@ OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "genlib_ops.h"
 
 #include <lv2/core/lv2.h>
+#include <lv2/core/lv2_util.h>
+
+#include "control-port-state-update.h"
 
 #include <cstring>
 
@@ -54,6 +57,14 @@ struct State {
 	t_sample m_smth_wet;
 	t_sample m_smth_depth;
 	t_sample wet;
+    
+	const LV2_Control_Port_State_Update* controlPortStateUpdate;
+    bool update_state = true;
+
+	State(const LV2_Control_Port_State_Update* controlPortStateUpdateInit) {
+		controlPortStateUpdate = controlPortStateUpdateInit;
+	};
+
 	// re-initialize all member variables;
 	inline void reset(t_param __sr) {
 		m_y_1 = ((int)0);
@@ -72,6 +83,13 @@ struct State {
 	};
 	// the signal processing routine;
 	inline void perform_mono(const t_sample * __in1, t_sample * __out1, int __n) {
+		if (update_state && controlPortStateUpdate != NULL)
+        {
+            controlPortStateUpdate->update_state(controlPortStateUpdate->handle,
+                                                 7,
+                                                 LV2_CONTROL_PORT_STATE_INACTIVE);
+            update_state = false;
+        }
 		t_sample expr_1090 = (((m_tone_8 * ((int)2)) * ((t_sample)3.1415926535898)) * ((t_sample)2.0833333333333e-05));
 		t_sample expr_1089 = (((t_sample)0.0027777777777778) * m_phase_7);
 		t_sample wrap_3 = wrap(expr_1089, ((int)0), ((int)1));
@@ -107,6 +125,13 @@ struct State {
 		}
 	};
 	inline void perform_stereo(const t_sample ** __ins, t_sample ** __outs, int __n) {
+		if (update_state && controlPortStateUpdate != NULL)
+        {
+            controlPortStateUpdate->update_state(controlPortStateUpdate->handle,
+                                                 7,
+                                                 LV2_CONTROL_PORT_STATE_NONE);
+            update_state = false;
+        }
 		const t_sample * __in1 = __ins[0];
 		const t_sample * __in2 = __ins[1];
 		t_sample * __out1 = __outs[0];
@@ -214,8 +239,12 @@ struct State {
 
 // --------------------------------------------------------------------------------------------------------------------
 
-static LV2_Handle lv2_instantiate(const LV2_Descriptor* desc, double sampleRate, const char*, const LV2_Feature* const*) {
-	auto plugin = new State();
+static LV2_Handle lv2_instantiate(const LV2_Descriptor* desc, double sampleRate, const char*, const LV2_Feature* const* const features) {
+    const LV2_Control_Port_State_Update* controlPortStateUpdate = NULL;
+    lv2_features_query(features,
+                       LV2_CONTROL_PORT_STATE_UPDATE_URI, &controlPortStateUpdate, false,
+                       NULL);
+	auto plugin = new State(controlPortStateUpdate);
 	plugin->reset(sampleRate);
 	if (std::strcmp(desc->URI, "urn:darkglass:dark-tremolo#stereo") == 0)
 		plugin->m_phase_7 = 180;

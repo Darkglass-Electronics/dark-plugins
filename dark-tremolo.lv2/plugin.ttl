@@ -28,7 +28,8 @@
 		foaf:mbox <mailto:contact@darkglass.com> ;
 	] ;
 	doap:license <http://spdx.org/licenses/ISC.html> ;
-	lv2:optionalFeature lv2:hardRTCapable ;
+	lv2:optionalFeature lv2:hardRTCapable , 
+                        <http://www.darkglass.com/lv2/ns/lv2ext/control-port-state-update> ;
 	lv2:port [
 		a lv2:AudioPort, lv2:InputPort ;
 		lv2:index 0 ;

@@ -1,0 +1,3 @@
+[submodule "darkglass-lv2-extensions"]
+	path = darkglass-lv2-extensions
+	url = https://github.com/Darkglass-Electronics/LV2-Extensions.git

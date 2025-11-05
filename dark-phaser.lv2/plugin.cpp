@@ -31,6 +31,9 @@
 #include "bypass.h"
 
 #include <lv2/core/lv2.h>
+#include <lv2/core/lv2_util.h>
+
+#include "control-port-state-update.h"
 
 #include <cstring>
 #include <cmath>
@@ -82,8 +85,12 @@ public:
 
     std::conditional_t<io_count == 2, dsp::simple_phaser, unused> right;
 
+private:
+    const LV2_Control_Port_State_Update* controlPortStateUpdate;
+    bool update_state = true;
+
 public:
-    phaser_audio_module();
+    phaser_audio_module(const LV2_Control_Port_State_Update* controlPortStateUpdateInit);
 
     void params_changed() override {
         const auto &params = this->params;
@@ -162,6 +169,14 @@ public:
     }
 
     void process(uint32_t offset, uint32_t nsamples) override {
+        if (update_state && controlPortStateUpdate != NULL)
+        {
+            controlPortStateUpdate->update_state(controlPortStateUpdate->handle,
+                                                 io_count + io_count + par_stereo,
+                                                 io_count == 2 ? LV2_CONTROL_PORT_STATE_NONE : LV2_CONTROL_PORT_STATE_INACTIVE);
+            update_state = false;
+        }
+
         const auto &outs = this->outs;
         const auto &ins = this->ins;
         const auto &params = this->params;
@@ -192,9 +207,11 @@ public:
 };
 
 template <>
-phaser_audio_module<1>::phaser_audio_module()
+phaser_audio_module<1>::phaser_audio_module(const LV2_Control_Port_State_Update* controlPortStateUpdateInit)
     : left(kPhaserModuleDefaultStages, x1vals[0], y1vals[0])
 {
+    controlPortStateUpdate = controlPortStateUpdateInit;
+
     left.set_dry(1.f);
     left.set_wet(1.f);
     left.set_lfo_active(false);
@@ -204,10 +221,12 @@ phaser_audio_module<1>::phaser_audio_module()
 }
 
 template <>
-phaser_audio_module<2>::phaser_audio_module()
+phaser_audio_module<2>::phaser_audio_module(const LV2_Control_Port_State_Update* controlPortStateUpdateInit)
     : left(kPhaserModuleDefaultStages, x1vals[0], y1vals[0])
     , right(kPhaserModuleDefaultStages, x1vals[1], y1vals[1])
 {
+    controlPortStateUpdate = controlPortStateUpdateInit;
+
     left.set_dry(1.f);
     left.set_wet(1.f);
     left.set_lfo_active(false);
@@ -227,9 +246,15 @@ phaser_audio_module<2>::phaser_audio_module()
 using namespace calf_plugins;
 
 template <int io_count>
-static LV2_Handle lv2_instantiate(const LV2_Descriptor*, double sampleRate, const char* uri, const LV2_Feature* const*)
+static LV2_Handle lv2_instantiate(const LV2_Descriptor*, double sampleRate, const char* uri, const LV2_Feature* const* const features)
 {
-    auto plugin = new phaser_audio_module<io_count>();
+    const LV2_Control_Port_State_Update* controlPortStateUpdate = NULL;
+
+    lv2_features_query(features,
+                       LV2_CONTROL_PORT_STATE_UPDATE_URI, &controlPortStateUpdate, false,
+                       NULL);
+
+    auto plugin = new phaser_audio_module<io_count>(controlPortStateUpdate);
     plugin->set_sample_rate(sampleRate);
     return plugin;
 }
