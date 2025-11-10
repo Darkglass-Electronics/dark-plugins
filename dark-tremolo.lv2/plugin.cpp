@@ -125,13 +125,6 @@ struct State {
 		}
 	};
 	inline void perform_stereo(const t_sample ** __ins, t_sample ** __outs, int __n) {
-		if (update_state && controlPortStateUpdate != NULL)
-        {
-            controlPortStateUpdate->update_state(controlPortStateUpdate->handle,
-                                                 7,
-                                                 LV2_CONTROL_PORT_STATE_NONE);
-            update_state = false;
-        }
 		const t_sample * __in1 = __ins[0];
 		const t_sample * __in2 = __ins[1];
 		t_sample * __out1 = __outs[0];
